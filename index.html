@@ -123,7 +123,6 @@ typeSelect.addEventListener('change', () => {
   } else if(type === "data"){
     amountInput.classList.add('hidden');
     planSelect.classList.remove('hidden');
-    // Add fixed data plans
     planSelect.innerHTML = '<option value="">Select Data Plan</option>';
     ["500MB - ₦500","1GB - ₦1000","2GB - ₦2000"].forEach(p => {
       const opt = document.createElement('option');
@@ -184,77 +183,4 @@ logoutBtn.addEventListener('click', ()=>{
 </script>
 
 </body>
-</html>import fs from 'fs';
-import jwt from 'jsonwebtoken';
-
-export default function handler(req,res){
-  if(req.method!=='POST') return res.status(405).json({success:false,message:'Method not allowed'});
-  const {name,email,phone,password} = req.body;
-  if(!name || !email || !phone || !password) return res.json({success:false,message:'All fields required'});
-
-  let users=[];
-  const path='users.json';
-  if(fs.existsSync(path)) users=JSON.parse(fs.readFileSync(path));
-  if(users.find(u=>u.email===email)) return res.json({success:false,message:'Email already exists'});
-
-  const newUser={name,email,phone,password};
-  users.push(newUser);
-  fs.writeFileSync(path,JSON.stringify(users,null,2));
-  const token=jwt.sign({email},'secretkey',{expiresIn:'1d'});
-  res.json({success:true,message:'Account created',token,name});
-}import fs from 'fs';
-import jwt from 'jsonwebtoken';
-
-export default function handler(req,res){
-  if(req.method!=='POST') return res.status(405).json({success:false,message:'Method not allowed'});
-  const {email,password}=req.body;
-  if(!email || !password) return res.json({success:false,message:'All fields required'});
-
-  const path='users.json';
-  if(!fs.existsSync(path)) return res.json({success:false,message:'No users found'});
-  const users=JSON.parse(fs.readFileSync(path));
-  const user=users.find(u=>u.email===email && u.password===password);
-  if(!user) return res.json({success:false,message:'Invalid credentials'});
-  const token=jwt.sign({email},'secretkey',{expiresIn:'1d'});
-  res.json({success:true,message:'Login successful',token,name:user.name});
-}import fetch from 'node-fetch';
-import jwt from 'jsonwebtoken';
-
-export default async function handler(req,res){
-  if(req.method!=='POST') return res.status(405).json({success:false,message:'Method not allowed'});
-
-  const auth=req.headers.authorization;
-  if(!auth || !auth.startsWith('Bearer ')) return res.status(401).json({success:false,message:'Unauthorized'});
-  const token=auth.split(' ')[1];
-  try{ jwt.verify(token,'secretkey'); }catch(e){ return res.status(401).json({success:false,message:'Invalid token'}); }
-
-  const {type,network,phone,amount,paystackRef}=req.body;
-  if(!type||!network||!phone||!amount) return res.json({success:false,message:'Missing fields'});
-
-  const networkMap={
-    mtn:{airtime:'mtn-airtime',data:'mtn-data'},
-    glo:{airtime:'glo-airtime',data:'glo-data'},
-    airtel:{airtime:'airtel-airtime',data:'airtel-data'},
-    '9mobile':{airtime:'9mobile-airtime',data:'9mobile-data'}
-  };
-  const serviceID=networkMap[network][type];
-  if(!serviceID) return res.json({success:false,message:'Invalid network'});
-
-  const vtpassData={ request_id:'req-'+Date.now(), serviceID, billersCode:phone, amount };
-
-  try{
-    const response=await fetch('https://vtpass.com/api/pay',{
-      method:'POST',
-      headers:{
-        'Authorization':'Basic '+Buffer.from('YOUR_VTPASS_API_KEY:YOUR_VTPASS_SECRET').toString('base64'),
-        'Content-Type':'application/json'
-      },
-      body: JSON.stringify(vtpassData)
-    });
-    const result=await response.json();
-    if(result.response_description==='Transaction Successful') res.json({success:true});
-    else res.json({success:false,message:result.response_description});
-  }catch(e){
-    res.status(500).json({success:false,message:e.message});
-  }
-}
+    </html>
