@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Blexyn App</title>
+  <title>Blexyn App - Local Test</title>
   <style>
     body { background: #121212; color: #fff; font-family: Arial; display:flex; justify-content:center; align-items:center; min-height:100vh; }
     .card { background:#1e1e1e; padding:30px; border-radius:15px; width:100%; max-width:400px; text-align:center; }
@@ -74,8 +74,7 @@ const buyMessage = document.getElementById('buyMessage');
 const logoutBtn = document.getElementById('logoutBtn');
 
 let isSignup = false;
-let token = null;
-let userName = "";
+let currentUser = null;
 
 // Toggle Login / Sign Up
 toggleAuth.addEventListener('click', () => {
@@ -86,8 +85,16 @@ toggleAuth.addEventListener('click', () => {
   toggleAuth.textContent = isSignup ? "Already have an account? Login" : "Don't have an account? Sign Up";
 });
 
+// LocalStorage Helpers
+function getUsers() {
+  return JSON.parse(localStorage.getItem('users') || '[]');
+}
+function saveUsers(users) {
+  localStorage.setItem('users', JSON.stringify(users));
+}
+
 // Auth Button
-authBtn.addEventListener('click', async () => {
+authBtn.addEventListener('click', () => {
   const name = nameInput.value;
   const email = emailInput.value;
   const phone = phoneInput.value;
@@ -97,20 +104,27 @@ authBtn.addEventListener('click', async () => {
     return;
   }
 
-  const endpoint = isSignup ? '/api/signup' : '/api/login';
-  const res = await fetch(endpoint, {
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({name,email,phone,password})
-  });
-  const data = await res.json();
-  authMessage.textContent = data.message;
-  if(data.success){
-    token = data.token;
-    userName = data.name;
+  let users = getUsers();
+
+  if(isSignup){
+    if(users.find(u=>u.email===email)){
+      authMessage.textContent = "Email already exists!";
+      return;
+    }
+    users.push({name,email,phone,password});
+    saveUsers(users);
+    authMessage.textContent = "Sign Up successful! You can login now.";
+    toggleAuth.click(); // switch to login
+  } else {
+    const user = users.find(u=>u.email===email && u.password===password);
+    if(!user){
+      authMessage.textContent = "Invalid email or password!";
+      return;
+    }
+    currentUser = user;
+    welcome.textContent = `Hi ${user.name}`;
     dashboardDiv.classList.remove('hidden');
     authDiv.classList.add('hidden');
-    welcome.textContent = `Hi ${userName}`;
   }
 });
 
@@ -136,8 +150,8 @@ typeSelect.addEventListener('change', () => {
   }
 });
 
-// Buy Button
-buyBtn.addEventListener('click', async () => {
+// Buy Button (local test)
+buyBtn.addEventListener('click', () => {
   const type = typeSelect.value;
   const network = networkSelect.value;
   const phone = phoneInput.value;
@@ -150,32 +164,13 @@ buyBtn.addEventListener('click', async () => {
     buyMessage.textContent = "Airtime must be ₦50–₦10,000";
     return;
   }
-  const amountKobo = amount*100;
 
-  const handler = PaystackPop.setup({
-    key: 'YOUR_PAYSTACK_PUBLIC_KEY', // replace with your key
-    email: 'customer@example.com',
-    amount: amountKobo,
-    currency:"NGN",
-    ref: ''+Math.floor(Math.random()*1000000000+1),
-    onClose:function(){ buyMessage.textContent="Payment cancelled"; },
-    callback: async function(response){
-      buyMessage.textContent="Payment successful! Ref: "+response.reference;
-      const res = await fetch('/api/buy',{
-        method:'POST',
-        headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
-        body: JSON.stringify({type,network,phone,amount,paystackRef:response.reference})
-      });
-      const data = await res.json();
-      buyMessage.textContent = data.success ? "Delivery successful!" : "Delivery failed: "+data.message;
-    }
-  });
-  handler.openIframe();
+  buyMessage.textContent = `Purchase simulated: ${type} ${amount} on ${network} for ${phone}`;
 });
 
 // Logout
 logoutBtn.addEventListener('click', ()=>{
-  token=null;
+  currentUser=null;
   dashboardDiv.classList.add('hidden');
   authDiv.classList.remove('hidden');
   authMessage.textContent="";
