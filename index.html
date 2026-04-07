@@ -1,13 +1,147 @@
+
 <!DOCTYPE html>
 <html>
 <head>
-<title>Blexyn</title>
+  <title>Blexyn App</title>
+  <style>
+    body {
+      background: #000;
+      color: #fff;
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 50px;
+    }
+    input, select, button {
+      padding: 10px;
+      margin: 10px 0;
+      width: 220px;
+      font-size: 16px;
+      border-radius: 5px;
+      border: none;
+    }
+    button {
+      background: #00c853;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #00e676;
+    }
+    .message {
+      margin-top: 20px;
+      font-weight: bold;
+    }
+  </style>
 </head>
-<body style="background:black;color:white;text-align:center">
+<body>
 
-<h1>Blexyn App</h1>
-<h2>₦10,000</h2>
-<p>App is working ✅</p>
+  <h1>Blexyn App</h1>
+  <h2>Buy Data / Airtime</h2>
+
+  <input type="text" id="phone" placeholder="Enter Phone Number" /><br>
+
+  <select id="network" onchange="updatePlans()">
+    <option value="">Select Network</option>
+    <option value="mtn">MTN</option>
+    <option value="glo">GLO</option>
+    <option value="airtel">Airtel</option>
+    <option value="9mobile">9Mobile</option>
+  </select><br>
+
+  <select id="plan">
+    <option value="">Select Data Plan</option>
+  </select><br>
+
+  <button id="payBtn">Buy Now</button>
+
+  <div class="message" id="message"></div>
+
+  <script src="https://js.paystack.co/v1/inline.js"></script>
+  <script>
+    const payBtn = document.getElementById('payBtn');
+    const message = document.getElementById('message');
+    const planSelect = document.getElementById('plan');
+
+    // Define plans for each network
+    const plans = {
+      mtn: [
+        { name: '500MB - ₦500', value: 500 },
+        { name: '1GB - ₦1000', value: 1000 },
+        { name: '2GB - ₦2000', value: 2000 }
+      ],
+      glo: [
+        { name: '500MB - ₦400', value: 400 },
+        { name: '1GB - ₦800', value: 800 },
+        { name: '2GB - ₦1600', value: 1600 }
+      ],
+      airtel: [
+        { name: '500MB - ₦450', value: 450 },
+        { name: '1GB - ₦900', value: 900 },
+        { name: '2GB - ₦1800', value: 1800 }
+      ],
+      '9mobile': [
+        { name: '500MB - ₦500', value: 500 },
+        { name: '1GB - ₦1000', value: 1000 },
+        { name: '2GB - ₦2000', value: 2000 }
+      ]
+    };
+
+    function updatePlans() {
+      const network = document.getElementById('network').value;
+      planSelect.innerHTML = '<option value="">Select Data Plan</option>';
+      if(plans[network]){
+        plans[network].forEach(p => {
+          const option = document.createElement('option');
+          option.value = p.value;
+          option.textContent = p.name;
+          planSelect.appendChild(option);
+        });
+      }
+    }
+
+    payBtn.addEventListener('click', async () => {
+      const phone = document.getElementById('phone').value.trim();
+      const network = document.getElementById('network').value;
+      const amount = planSelect.value;
+
+      if(!phone || !network || !amount){
+        message.textContent = "Please fill in all fields!";
+        return;
+      }
+
+      const amountKobo = amount * 100;
+
+      const handler = PaystackPop.setup({
+        key: 'YOUR_PAYSTACK_PUBLIC_KEY', // Replace with your key
+        email: 'customer@example.com',
+        amount: amountKobo,
+        currency: "NGN",
+        ref: '' + Math.floor((Math.random() * 1000000000) + 1),
+        onClose: function(){
+          message.textContent = "Payment cancelled!";
+        },
+        callback: async function(response){
+          message.textContent = "Payment successful! Ref: " + response.reference;
+
+          const res = await fetch('/api/buy', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ phone, network, amount, paystackRef: response.reference })
+          });
+
+          const data = await res.json();
+
+          if(data.success){
+            message.textContent = "Payment successful & data delivered! Ref: " + response.reference;
+          } else {
+            message.textContent = "Payment succeeded but delivery failed: " + data.message;
+          }
+        }
+      });
+
+      handler.openIframe();
+    });
+  </script>
 
 </body>
 </html>
