@@ -1,214 +1,142 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Blexyn App</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blexyn App</title>
 
 <style>
-* { box-sizing: border-box; }
-
-body { 
-  background: linear-gradient(to bottom, #e6f0ff, #ffffff);
-  font-family: -apple-system, Arial;
-  display:flex; 
-  justify-content:center; 
-  align-items:center; 
-  min-height:100vh; 
-  margin:0; 
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #0a0a0a;
+  color: white;
 }
 
-/* iPhone Frame */
-.container { 
-  width: 350px; 
-  height: 700px; 
-  background: #ffffff; 
-  border-radius: 40px; 
-  padding: 20px; 
-  box-shadow: 0 20px 60px rgba(0,0,0,0.2);
-  overflow-y: auto;
+/* Background */
+.bg {
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  background: url('https://images.unsplash.com/photo-1506744038136-46273834b3fb') center/cover;
+  filter: blur(10px) brightness(0.4);
+  z-index: -1;
 }
 
-/* Cards */
-.card { 
-  background: #f7fbff;
-  padding: 20px; 
-  border-radius: 25px; 
-  margin-bottom: 15px; 
-  box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+/* Container */
+.container {
+  max-width: 400px;
+  margin: 80px auto;
+  padding: 20px;
+}
+
+/* Title */
+h2 {
+  text-align: center;
+  margin-bottom: 20px;
 }
 
 /* Inputs */
-input, select { 
-  width:100%; 
-  padding:14px; 
-  margin:8px 0; 
-  border-radius:15px; 
-  border:1px solid #d0e2ff; 
-  background: #ffffff;
-  font-size:16px;
-  outline:none;
+.input-box {
+  width: 100%;
+  padding: 15px;
+  margin: 10px 0;
+  border-radius: 25px;
+  border: none;
+  outline: none;
+  background: rgba(255,255,255,0.08);
+  color: white;
+  font-size: 16px;
 }
 
-/* Buttons */
-button { 
-  width:100%; 
-  padding:14px; 
-  margin-top:10px; 
-  border-radius:20px; 
-  border:none;
-  background: linear-gradient(135deg, #3399ff, #007bff);
-  color:#fff; 
-  font-weight:bold; 
-  cursor:pointer; 
+/* Button */
+.btn {
+  width: 100%;
+  padding: 15px;
+  border-radius: 25px;
+  border: none;
+  background: #007bff;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
 }
 
-button:active { transform: scale(0.97); }
+/* WhatsApp Floating Button */
+.whatsapp-btn {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: #25D366;
+  border-radius: 50px;
+  padding: 12px 15px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
 
-h2, h3 { color:#007bff; margin-top:0; }
-.link { color:#007bff; cursor:pointer; }
-.message { color:red; min-height:20px; }
-.hidden { display:none; }
+/* Dashboard */
+.dashboard {
+  display: none;
+}
 
+/* Card */
+.card {
+  background: rgba(255,255,255,0.05);
+  padding: 15px;
+  border-radius: 15px;
+  margin-top: 20px;
+}
 </style>
 </head>
 
 <body>
-<div class="container">
 
-<!-- Welcome -->
-<div id="welcomeScreen" class="card">
-  <h2>Welcome to Blexyn</h2>
-  <button onclick="goAuth(true)">Create Account</button>
-  <button onclick="goAuth(false)">Login</button>
+<div class="bg"></div>
+
+<!-- LOGIN -->
+<div class="container" id="loginPage">
+  <h2>Welcome Back</h2>
+
+  <input type="email" id="email" placeholder="Enter your email" class="input-box">
+  <input type="password" id="password" placeholder="Enter your password" class="input-box">
+
+  <button class="btn" onclick="login()">Login</button>
 </div>
 
-<!-- Auth -->
-<div id="authScreen" class="card hidden">
-  <h2 id="authTitle">Login</h2>
-  <input id="name" placeholder="Full Name" class="hidden">
-  <input id="email" placeholder="Email">
-  <input id="phone" placeholder="Phone">
-  <input id="password" type="password" placeholder="Password">
-  <button onclick="auth()">Continue</button>
-  <p id="authMsg" class="message"></p>
-  <p class="link" onclick="toggleAuth()">Switch</p>
-  <button onclick="show('welcomeScreen')">Back</button>
+<!-- DASHBOARD -->
+<div class="container dashboard" id="dashboard">
+  <h2>Blexyn Dashboard</h2>
+
+  <div class="card">
+    <h3>Balance</h3>
+    <p>₦0.00</p>
+  </div>
+
+  <div class="card">
+    <h3>Buy Data</h3>
+    <button class="btn">Proceed</button>
+  </div>
 </div>
 
-<!-- Dashboard -->
-<div id="dashboard" class="card hidden">
-  <h2 id="userName"></h2>
-  <p>Wallet: ₦<span id="wallet">0</span></p>
-
-  <button onclick="show('sell')">Sell</button>
-  <button onclick="show('withdraw')">Withdraw</button>
-  <button onclick="show('profile')">Profile</button>
-  <button onclick="logout()">Logout</button>
-</div>
-
-<!-- Sell -->
-<div id="sell" class="card hidden">
-  <h2>Sell</h2>
-  <input id="sellAmt" placeholder="Amount">
-  <button onclick="sell()">Confirm</button>
-  <p id="sellMsg" class="message"></p>
-  <button onclick="dashboard()">Back</button>
-</div>
-
-<!-- Withdraw -->
-<div id="withdraw" class="card hidden">
-  <h2>Withdraw</h2>
-  <input id="withdrawAmt" placeholder="Amount">
-  <button onclick="withdraw()">Confirm</button>
-  <p id="withMsg" class="message"></p>
-  <button onclick="dashboard()">Back</button>
-</div>
-
-<!-- Profile -->
-<div id="profile" class="card hidden">
-  <h2>Profile</h2>
-  <p id="profileInfo"></p>
-  <button onclick="dashboard()">Back</button>
-</div>
-
+<!-- WhatsApp Button -->
+<div class="whatsapp-btn">
+  <img src="https://img.icons8.com/ios-filled/20/ffffff/whatsapp.png">
+  WhatsApp Bot
 </div>
 
 <script>
-let users = JSON.parse(localStorage.getItem('users')||'[]');
-let currentUser = null;
-let signup = false;
+function login() {
+  let email = document.getElementById("email").value;
+  let password = document.getElementById("password").value;
 
-function show(id){
-  document.querySelectorAll('.card').forEach(c=>c.classList.add('hidden'));
-  document.getElementById(id).classList.remove('hidden');
-}
-
-function goAuth(isSign){
-  signup = isSign;
-  toggleAuth();
-  show('authScreen');
-}
-
-function toggleAuth(){
-  document.getElementById('name').classList.toggle('hidden', !signup);
-  document.getElementById('authTitle').innerText = signup ? "Sign Up" : "Login";
-}
-
-function auth(){
-  let name=nameInput();
-  let email=val('email');
-  let phone=val('phone');
-  let pass=val('password');
-  let msg=document.getElementById('authMsg');
-
-  if(!email||!pass||(signup&&!name)){ msg.innerText="Fill all"; return; }
-
-  if(signup){
-    users.push({name,email,phone,pass,wallet:0});
-    save();
-    msg.innerText="Account created!";
-    signup=false;
-    toggleAuth();
+  if(email && password){
+    document.getElementById("loginPage").style.display = "none";
+    document.getElementById("dashboard").style.display = "block";
   } else {
-    let u=users.find(x=>x.email==email && x.pass==pass);
-    if(!u){ msg.innerText="Wrong login"; return; }
-    currentUser=u;
-    dashboard();
+    alert("Enter your details");
   }
 }
-
-function dashboard(){
-  show('dashboard');
-  document.getElementById('userName').innerText="Hi "+currentUser.name;
-  document.getElementById('wallet').innerText=currentUser.wallet;
-}
-
-function sell(){
-  let amt=parseFloat(val('sellAmt'));
-  if(!amt) return;
-  currentUser.wallet+=amt*0.9;
-  save();
-  dashboard();
-}
-
-function withdraw(){
-  let amt=parseFloat(val('withdrawAmt'));
-  if(amt>currentUser.wallet) return;
-  currentUser.wallet-=amt;
-  save();
-  dashboard();
-}
-
-function logout(){
-  currentUser=null;
-  show('welcomeScreen');
-}
-
-function save(){
-  localStorage.setItem('users', JSON.stringify(users));
-}
-
-function val(id){ return document.getElementById(id).value; }
-function nameInput(){ return document.getElementById('name').value; }
 </script>
 
 </body>
