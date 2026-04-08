@@ -1,7 +1,14 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Blexyn App</title>
+
 <style>
+* { box-sizing: border-box; }
+
 body { 
   background: linear-gradient(to bottom, #e6f0ff, #ffffff);
-  font-family: -apple-system, BlinkMacSystemFont, "San Francisco", Arial;
+  font-family: -apple-system, Arial;
   display:flex; 
   justify-content:center; 
   align-items:center; 
@@ -20,30 +27,25 @@ body {
   overflow-y: auto;
 }
 
-/* Glass Card */
+/* Cards */
 .card { 
-  background: rgba(255,255,255,0.35); 
-  backdrop-filter: blur(20px); 
-  padding: 25px; 
+  background: #f7fbff;
+  padding: 20px; 
   border-radius: 25px; 
-  margin-bottom: 20px; 
-  box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-  border: 1px solid rgba(255,255,255,0.3);
-  animation: fadeIn 0.4s ease;
+  margin-bottom: 15px; 
+  box-shadow: 0 10px 25px rgba(0,0,0,0.08);
 }
 
 /* Inputs */
 input, select { 
   width:100%; 
   padding:14px; 
-  margin:10px 0; 
+  margin:8px 0; 
   border-radius:15px; 
-  border:none; 
-  background: rgba(255,255,255,0.6);
-  backdrop-filter: blur(10px);
+  border:1px solid #d0e2ff; 
+  background: #ffffff;
   font-size:16px;
   outline:none;
-  box-shadow: inset 0 2px 5px rgba(0,0,0,0.05);
 }
 
 /* Buttons */
@@ -57,64 +59,157 @@ button {
   color:#fff; 
   font-weight:bold; 
   cursor:pointer; 
-  transition:.3s; 
-  box-shadow: 0 5px 15px rgba(0,123,255,0.3);
 }
 
-button:hover { 
-  transform: scale(1.05);
-}
+button:active { transform: scale(0.97); }
 
-/* Text */
-h2 { 
-  margin-top:0; 
-  color:#007bff; 
-  font-weight:600;
-}
-
-h3 { 
-  color:#007bff; 
-}
-
-p { 
-  color:#444;
-}
-
-/* Links */
-.link { 
-  color:#007bff; 
-  cursor:pointer; 
-  text-decoration:none;
-  font-weight:500;
-}
-
-.link:hover {
-  text-decoration: underline;
-}
-
-/* Message */
-.message { 
-  min-height:20px; 
-  font-weight:bold; 
-  margin-top:5px; 
-  color:#ff3b30;
-}
-
-/* Hidden */
+h2, h3 { color:#007bff; margin-top:0; }
+.link { color:#007bff; cursor:pointer; }
+.message { color:red; min-height:20px; }
 .hidden { display:none; }
 
-/* Smooth animation */
-@keyframes fadeIn {
-  from { opacity:0; transform: translateY(10px); }
-  to { opacity:1; transform: translateY(0); }
+</style>
+</head>
+
+<body>
+<div class="container">
+
+<!-- Welcome -->
+<div id="welcomeScreen" class="card">
+  <h2>Welcome to Blexyn</h2>
+  <button onclick="goAuth(true)">Create Account</button>
+  <button onclick="goAuth(false)">Login</button>
+</div>
+
+<!-- Auth -->
+<div id="authScreen" class="card hidden">
+  <h2 id="authTitle">Login</h2>
+  <input id="name" placeholder="Full Name" class="hidden">
+  <input id="email" placeholder="Email">
+  <input id="phone" placeholder="Phone">
+  <input id="password" type="password" placeholder="Password">
+  <button onclick="auth()">Continue</button>
+  <p id="authMsg" class="message"></p>
+  <p class="link" onclick="toggleAuth()">Switch</p>
+  <button onclick="show('welcomeScreen')">Back</button>
+</div>
+
+<!-- Dashboard -->
+<div id="dashboard" class="card hidden">
+  <h2 id="userName"></h2>
+  <p>Wallet: ₦<span id="wallet">0</span></p>
+
+  <button onclick="show('sell')">Sell</button>
+  <button onclick="show('withdraw')">Withdraw</button>
+  <button onclick="show('profile')">Profile</button>
+  <button onclick="logout()">Logout</button>
+</div>
+
+<!-- Sell -->
+<div id="sell" class="card hidden">
+  <h2>Sell</h2>
+  <input id="sellAmt" placeholder="Amount">
+  <button onclick="sell()">Confirm</button>
+  <p id="sellMsg" class="message"></p>
+  <button onclick="dashboard()">Back</button>
+</div>
+
+<!-- Withdraw -->
+<div id="withdraw" class="card hidden">
+  <h2>Withdraw</h2>
+  <input id="withdrawAmt" placeholder="Amount">
+  <button onclick="withdraw()">Confirm</button>
+  <p id="withMsg" class="message"></p>
+  <button onclick="dashboard()">Back</button>
+</div>
+
+<!-- Profile -->
+<div id="profile" class="card hidden">
+  <h2>Profile</h2>
+  <p id="profileInfo"></p>
+  <button onclick="dashboard()">Back</button>
+</div>
+
+</div>
+
+<script>
+let users = JSON.parse(localStorage.getItem('users')||'[]');
+let currentUser = null;
+let signup = false;
+
+function show(id){
+  document.querySelectorAll('.card').forEach(c=>c.classList.add('hidden'));
+  document.getElementById(id).classList.remove('hidden');
 }
 
-/* Scrollbar (clean iOS feel) */
-.container::-webkit-scrollbar {
-  width: 5px;
+function goAuth(isSign){
+  signup = isSign;
+  toggleAuth();
+  show('authScreen');
 }
-.container::-webkit-scrollbar-thumb {
-  background: #ccc;
-  border-radius: 10px;
+
+function toggleAuth(){
+  document.getElementById('name').classList.toggle('hidden', !signup);
+  document.getElementById('authTitle').innerText = signup ? "Sign Up" : "Login";
 }
-</style>
+
+function auth(){
+  let name=nameInput();
+  let email=val('email');
+  let phone=val('phone');
+  let pass=val('password');
+  let msg=document.getElementById('authMsg');
+
+  if(!email||!pass||(signup&&!name)){ msg.innerText="Fill all"; return; }
+
+  if(signup){
+    users.push({name,email,phone,pass,wallet:0});
+    save();
+    msg.innerText="Account created!";
+    signup=false;
+    toggleAuth();
+  } else {
+    let u=users.find(x=>x.email==email && x.pass==pass);
+    if(!u){ msg.innerText="Wrong login"; return; }
+    currentUser=u;
+    dashboard();
+  }
+}
+
+function dashboard(){
+  show('dashboard');
+  document.getElementById('userName').innerText="Hi "+currentUser.name;
+  document.getElementById('wallet').innerText=currentUser.wallet;
+}
+
+function sell(){
+  let amt=parseFloat(val('sellAmt'));
+  if(!amt) return;
+  currentUser.wallet+=amt*0.9;
+  save();
+  dashboard();
+}
+
+function withdraw(){
+  let amt=parseFloat(val('withdrawAmt'));
+  if(amt>currentUser.wallet) return;
+  currentUser.wallet-=amt;
+  save();
+  dashboard();
+}
+
+function logout(){
+  currentUser=null;
+  show('welcomeScreen');
+}
+
+function save(){
+  localStorage.setItem('users', JSON.stringify(users));
+}
+
+function val(id){ return document.getElementById(id).value; }
+function nameInput(){ return document.getElementById('name').value; }
+</script>
+
+</body>
+</html>
