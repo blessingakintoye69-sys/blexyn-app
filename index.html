@@ -6,136 +6,225 @@
 <title>Blexyn App</title>
 
 <style>
-body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-  background: #0a0a0a;
-  color: white;
+body{
+  margin:0;
+  font-family:Arial;
+  background:#0a0a0a;
+  color:white;
 }
 
-/* Background */
-.bg {
-  position: fixed;
-  width: 100%;
-  height: 100%;
-  background: url('https://images.unsplash.com/photo-1506744038136-46273834b3fb') center/cover;
-  filter: blur(10px) brightness(0.4);
-  z-index: -1;
+.container{
+  max-width:400px;
+  margin:40px auto;
+  padding:20px;
 }
 
-/* Container */
-.container {
-  max-width: 400px;
-  margin: 80px auto;
-  padding: 20px;
+input, select{
+  width:100%;
+  padding:14px;
+  margin:8px 0;
+  border-radius:20px;
+  border:none;
+  background:#1a1a1a;
+  color:white;
 }
 
-/* Title */
-h2 {
-  text-align: center;
-  margin-bottom: 20px;
+button{
+  width:100%;
+  padding:14px;
+  border:none;
+  border-radius:20px;
+  background:#007bff;
+  color:white;
+  margin-top:10px;
 }
 
-/* Inputs */
-.input-box {
-  width: 100%;
-  padding: 15px;
-  margin: 10px 0;
-  border-radius: 25px;
-  border: none;
-  outline: none;
-  background: rgba(255,255,255,0.08);
-  color: white;
-  font-size: 16px;
+.screen{display:none;}
+.active{display:block;}
+
+.card{
+  background:#1a1a1a;
+  padding:15px;
+  border-radius:15px;
+  margin-top:15px;
 }
 
-/* Button */
-.btn {
-  width: 100%;
-  padding: 15px;
-  border-radius: 25px;
-  border: none;
-  background: #007bff;
-  color: white;
-  font-size: 16px;
-  cursor: pointer;
+.nav{
+  position:fixed;
+  bottom:0;
+  width:100%;
+  display:flex;
+  justify-content:space-around;
+  background:#111;
+  padding:10px;
 }
 
-/* WhatsApp Floating Button */
-.whatsapp-btn {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  background: #25D366;
-  border-radius: 50px;
-  padding: 12px 15px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-}
-
-/* Dashboard */
-.dashboard {
-  display: none;
-}
-
-/* Card */
-.card {
-  background: rgba(255,255,255,0.05);
-  padding: 15px;
-  border-radius: 15px;
-  margin-top: 20px;
+.whatsapp-btn{
+  position:fixed;
+  right:20px;
+  bottom:80px;
+  background:#25D366;
+  padding:12px;
+  border-radius:50px;
+  text-decoration:none;
+  color:white;
 }
 </style>
 </head>
 
 <body>
 
-<div class="bg"></div>
+<!-- WELCOME -->
+<div class="container screen active" id="welcome">
+  <h2>Welcome</h2>
+  <button onclick="show('register')">Create Account</button>
+  <button onclick="show('login')">Login</button>
+</div>
+
+<!-- REGISTER -->
+<div class="container screen" id="register">
+  <h2>Register</h2>
+
+  <input placeholder="Phone Number (080...)" id="phone">
+  <button onclick="sendOTP()">Send OTP</button>
+
+  <input placeholder="Enter OTP" id="otp">
+  <button onclick="verifyOTP()">Verify</button>
+
+  <input placeholder="Full Name">
+  <input placeholder="Email">
+  <input type="date">
+
+  <select>
+    <option>Lagos</option>
+    <option>Abuja</option>
+    <option>Kano</option>
+  </select>
+
+  <input placeholder="BVN or NIN">
+
+  <input placeholder="Create Password" type="password">
+  <input placeholder="4-digit PIN" type="password">
+
+  <button onclick="completeRegister()">Create Account</button>
+</div>
 
 <!-- LOGIN -->
-<div class="container" id="loginPage">
-  <h2>Welcome Back</h2>
-
-  <input type="email" id="email" placeholder="Enter your email" class="input-box">
-  <input type="password" id="password" placeholder="Enter your password" class="input-box">
-
-  <button class="btn" onclick="login()">Login</button>
+<div class="container screen" id="login">
+  <h2>Login</h2>
+  <input placeholder="Phone Number">
+  <input placeholder="PIN" type="password">
+  <button onclick="login()">Login</button>
 </div>
 
 <!-- DASHBOARD -->
-<div class="container dashboard" id="dashboard">
-  <h2>Blexyn Dashboard</h2>
+<div class="container screen" id="dashboard">
+  <h2>Dashboard</h2>
 
   <div class="card">
-    <h3>Balance</h3>
-    <p>₦0.00</p>
+    Wallet Balance: ₦0.00
   </div>
 
   <div class="card">
-    <h3>Buy Data</h3>
-    <button class="btn">Proceed</button>
+    Data Balance: 0GB
   </div>
+
+  <button onclick="show('sell')">Sell Data</button>
+  <button onclick="show('withdraw')">Withdraw</button>
+  <button onclick="show('history')">History</button>
 </div>
 
-<!-- WhatsApp Button -->
-<div class="whatsapp-btn">
-  <img src="https://img.icons8.com/ios-filled/20/ffffff/whatsapp.png">
-  WhatsApp Bot
+<!-- SELL DATA -->
+<div class="container screen" id="sell">
+  <h2>Sell Data</h2>
+
+  <select>
+    <option>MTN</option>
+    <option>Airtel</option>
+    <option>Glo</option>
+    <option>9mobile</option>
+  </select>
+
+  <input placeholder="Amount (GB)">
+  <button onclick="sellData()">Sell</button>
 </div>
+
+<!-- WITHDRAW -->
+<div class="container screen" id="withdraw">
+  <h2>Withdraw</h2>
+
+  <select>
+    <option>Bank Transfer</option>
+    <option>OPay</option>
+    <option>PalmPay</option>
+  </select>
+
+  <input placeholder="Account Number">
+  <input placeholder="Amount">
+
+  <button onclick="withdraw()">Withdraw</button>
+</div>
+
+<!-- HISTORY -->
+<div class="container screen" id="history">
+  <h2>Transaction History</h2>
+
+  <div class="card">No transactions yet</div>
+</div>
+
+<!-- PROFILE -->
+<div class="container screen" id="profile">
+  <h2>Profile</h2>
+
+  <button onclick="logout()">Logout</button>
+</div>
+
+<!-- NAV -->
+<div class="nav">
+  <span onclick="show('dashboard')">Home</span>
+  <span onclick="show('sell')">Sell</span>
+  <span onclick="show('history')">History</span>
+  <span onclick="show('profile')">Profile</span>
+</div>
+
+<!-- WHATSAPP -->
+<a href="https://wa.me/2348123456789?text=Hello%20I%20need%20help" target="_blank" class="whatsapp-btn">
+Chat
+</a>
 
 <script>
-function login() {
-  let email = document.getElementById("email").value;
-  let password = document.getElementById("password").value;
+function show(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
 
-  if(email && password){
-    document.getElementById("loginPage").style.display = "none";
-    document.getElementById("dashboard").style.display = "block";
-  } else {
-    alert("Enter your details");
-  }
+function sendOTP(){
+  alert("OTP sent (demo)");
+}
+
+function verifyOTP(){
+  alert("OTP verified");
+}
+
+function completeRegister(){
+  alert("Account created!");
+  show('login');
+}
+
+function login(){
+  show('dashboard');
+}
+
+function sellData(){
+  alert("Data sold! ₦315 added");
+}
+
+function withdraw(){
+  alert("Withdrawal successful");
+}
+
+function logout(){
+  show('welcome');
 }
 </script>
 
