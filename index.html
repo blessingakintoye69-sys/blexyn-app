@@ -6,49 +6,66 @@
 <title>Blexyn App</title>
 
 <style>
-body{
+body {
   margin:0;
-  font-family:Arial;
+  font-family: Arial;
   background:#0a0a0a;
   color:white;
 }
 
+/* Background */
+.bg {
+  position: fixed;
+  width:100%;
+  height:100%;
+  background:url('https://images.unsplash.com/photo-1506744038136-46273834b3fb') center/cover;
+  filter: blur(10px) brightness(0.4);
+  z-index:-1;
+}
+
+/* Container */
 .container{
   max-width:400px;
-  margin:40px auto;
+  margin:60px auto;
   padding:20px;
 }
 
+/* Inputs */
 input, select{
   width:100%;
   padding:14px;
   margin:8px 0;
-  border-radius:20px;
+  border-radius:25px;
   border:none;
-  background:#1a1a1a;
+  background:rgba(255,255,255,0.08);
   color:white;
 }
 
+/* Button */
 button{
   width:100%;
   padding:14px;
   border:none;
-  border-radius:20px;
+  border-radius:25px;
   background:#007bff;
   color:white;
   margin-top:10px;
+  cursor:pointer;
 }
 
+/* Screens */
 .screen{display:none;}
 .active{display:block;}
 
+/* Card */
 .card{
-  background:#1a1a1a;
+  background:rgba(255,255,255,0.05);
   padding:15px;
   border-radius:15px;
   margin-top:15px;
 }
 
+/* Nav */
 .nav{
   position:fixed;
   bottom:0;
@@ -59,12 +76,13 @@ button{
   padding:10px;
 }
 
+/* WhatsApp */
 .whatsapp-btn{
   position:fixed;
-  right:20px;
   bottom:80px;
+  right:20px;
   background:#25D366;
-  padding:12px;
+  padding:12px 15px;
   border-radius:50px;
   text-decoration:none;
   color:white;
@@ -73,6 +91,8 @@ button{
 </head>
 
 <body>
+
+<div class="bg"></div>
 
 <!-- WELCOME -->
 <div class="container screen active" id="welcome">
@@ -83,27 +103,27 @@ button{
 
 <!-- REGISTER -->
 <div class="container screen" id="register">
-  <h2>Register</h2>
+  <h2>Create Account</h2>
 
   <input placeholder="Phone Number (080...)" id="phone">
   <button onclick="sendOTP()">Send OTP</button>
 
-  <input placeholder="Enter OTP" id="otp">
-  <button onclick="verifyOTP()">Verify</button>
+  <input placeholder="Enter OTP">
+  <button onclick="verifyOTP()">Verify OTP</button>
 
   <input placeholder="Full Name">
   <input placeholder="Email">
   <input type="date">
 
   <select>
+    <option>Select State</option>
     <option>Lagos</option>
     <option>Abuja</option>
     <option>Kano</option>
   </select>
 
   <input placeholder="BVN or NIN">
-
-  <input placeholder="Create Password" type="password">
+  <input placeholder="Password" type="password">
   <input placeholder="4-digit PIN" type="password">
 
   <button onclick="completeRegister()">Create Account</button>
@@ -121,20 +141,15 @@ button{
 <div class="container screen" id="dashboard">
   <h2>Dashboard</h2>
 
-  <div class="card">
-    Wallet Balance: ₦0.00
-  </div>
-
-  <div class="card">
-    Data Balance: 0GB
-  </div>
+  <div class="card">Wallet Balance: ₦0.00</div>
+  <div class="card">Data Balance: 0GB</div>
 
   <button onclick="show('sell')">Sell Data</button>
   <button onclick="show('withdraw')">Withdraw</button>
   <button onclick="show('history')">History</button>
 </div>
 
-<!-- SELL DATA -->
+<!-- SELL -->
 <div class="container screen" id="sell">
   <h2>Sell Data</h2>
 
@@ -168,14 +183,12 @@ button{
 <!-- HISTORY -->
 <div class="container screen" id="history">
   <h2>Transaction History</h2>
-
   <div class="card">No transactions yet</div>
 </div>
 
 <!-- PROFILE -->
 <div class="container screen" id="profile">
   <h2>Profile</h2>
-
   <button onclick="logout()">Logout</button>
 </div>
 
@@ -188,8 +201,8 @@ button{
 </div>
 
 <!-- WHATSAPP -->
-<a href="https://wa.me/2348123456789?text=Hello%20I%20need%20help" target="_blank" class="whatsapp-btn">
-Chat
+<a href="https://wa.me/2348169822782?text=Hello%20I%20need%20help" target="_blank" class="whatsapp-btn">
+  WhatsApp
 </a>
 
 <script>
