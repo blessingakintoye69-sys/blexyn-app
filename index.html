@@ -1,245 +1,98 @@
-<!DOCTYPE html>
-<html lang="en">
+// ================= BACKEND (Node.js + Express) =================
+
+const express = require('express'); const app = express(); app.use(express.json());
+
+// Fake database let users = []; let transactions = [];
+
+// Sample Data Plans const DATA_PLANS = { MTN: [ { plan: "500MB", price: 180 }, { plan: "1GB", price: 300 }, { plan: "2GB", price: 600 } ], AIRTEL: [ { plan: "1GB", price: 350 }, { plan: "2GB", price: 700 } ] };
+
+// Register app.post('/register', (req, res) => { const { phone, password } = req.body; users.push({ phone, password, balance: 0 }); res.json({ message: 'Registered successfully' }); });
+
+// Login app.post('/login', (req, res) => { const { phone, password } = req.body; const user = users.find(u => u.phone === phone && u.password === password); if (!user) return res.status(400).json({ error: 'Invalid login' }); res.json({ message: 'Login successful', user }); });
+
+// Get Data Plans app.get('/plans/:network', (req, res) => { const network = req.params.network.toUpperCase(); res.json(DATA_PLANS[network] || []); });
+
+// Fund Wallet app.post('/fund', (req, res) => { const { phone, amount } = req.body; const user = users.find(u => u.phone === phone); user.balance += amount; res.json({ balance: user.balance }); });
+
+// Buy Data app.post('/buy-data', (req, res) => { const { phone, network, plan } = req.body; const user = users.find(u => u.phone === phone);
+
+const selectedPlan = DATA_PLANS[network].find(p => p.plan === plan);
+
+if (user.balance < selectedPlan.price) { return res.status(400).json({ error: 'Insufficient balance' }); }
+
+user.balance -= selectedPlan.price;
+
+transactions.push({ phone, network, plan, price: selectedPlan.price });
+
+res.json({ message: 'Data purchased', balance: user.balance }); });
+
+// Transactions app.get('/transactions/:phone', (req, res) => { const userTx = transactions.filter(t => t.phone === req.params.phone); res.json(userTx); });
+
+app.listen(3000, () => console.log('Server running on port 3000'));
+
+// ================= FRONTEND (HTML + JS) =================
+
+/*
+
+<!DOCTYPE html><html>
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Blexyn App</title>
-
-<style>
-body {
-  margin:0;
-  font-family: Arial;
-  background:#0a0a0a;
-  color:white;
-}
-
-/* Background */
-.bg {
-  position: fixed;
-  width:100%;
-  height:100%;
-  background:url('https://images.unsplash.com/photo-1506744038136-46273834b3fb') center/cover;
-  filter: blur(10px) brightness(0.4);
-  z-index:-1;
-}
-
-/* Container */
-.container{
-  max-width:400px;
-  margin:60px auto;
-  padding:20px;
-}
-
-/* Inputs */
-input, select{
-  width:100%;
-  padding:14px;
-  margin:8px 0;
-  border-radius:25px;
-  border:none;
-  background:rgba(255,255,255,0.08);
-  color:white;
-}
-
-/* Button */
-button{
-  width:100%;
-  padding:14px;
-  border:none;
-  border-radius:25px;
-  background:#007bff;
-  color:white;
-  margin-top:10px;
-  cursor:pointer;
-}
-
-/* Screens */
-.screen{display:none;}
-.active{display:block;}
-
-/* Card */
-.card{
-  background:rgba(255,255,255,0.05);
-  padding:15px;
-  border-radius:15px;
-  margin-top:15px;
-}
-
-/* Nav */
-.nav{
-  position:fixed;
-  bottom:0;
-  width:100%;
-  display:flex;
-  justify-content:space-around;
-  background:#111;
-  padding:10px;
-}
-
-/* WhatsApp */
-.whatsapp-btn{
-  position:fixed;
-  bottom:80px;
-  right:20px;
-  background:#25D366;
-  padding:12px 15px;
-  border-radius:50px;
-  text-decoration:none;
-  color:white;
-}
-</style>
+  <title>Data App</title>
 </head>
+<body><h2>Login</h2>
+<input id="phone" placeholder="Phone"><br>
+<input id="password" placeholder="Password"><br>
+<button onclick="login()">Login</button><h2>Buy Data</h2>
+<select id="network" onchange="loadPlans()">
+  <option>MTN</option>
+  <option>AIRTEL</option>
+</select><select id="plans"></select>
 
-<body>
-
-<div class="bg"></div>
-
-<!-- WELCOME -->
-<div class="container screen active" id="welcome">
-  <h2>Welcome</h2>
-  <button onclick="show('register')">Create Account</button>
-  <button onclick="show('login')">Login</button>
-</div>
-
-<!-- REGISTER -->
-<div class="container screen" id="register">
-  <h2>Create Account</h2>
-
-  <input placeholder="Phone Number (080...)" id="phone">
-  <button onclick="sendOTP()">Send OTP</button>
-
-  <input placeholder="Enter OTP">
-  <button onclick="verifyOTP()">Verify OTP</button>
-
-  <input placeholder="Full Name">
-  <input placeholder="Email">
-  <input type="date">
-
-  <select>
-    <option>Select State</option>
-    <option>Lagos</option>
-    <option>Abuja</option>
-    <option>Kano</option>
-  </select>
-
-  <input placeholder="BVN or NIN">
-  <input placeholder="Password" type="password">
-  <input placeholder="4-digit PIN" type="password">
-
-  <button onclick="completeRegister()">Create Account</button>
-</div>
-
-<!-- LOGIN -->
-<div class="container screen" id="login">
-  <h2>Login</h2>
-  <input placeholder="Phone Number">
-  <input placeholder="PIN" type="password">
-  <button onclick="login()">Login</button>
-</div>
-
-<!-- DASHBOARD -->
-<div class="container screen" id="dashboard">
-  <h2>Dashboard</h2>
-
-  <div class="card">Wallet Balance: ₦0.00</div>
-  <div class="card">Data Balance: 0GB</div>
-
-  <button onclick="show('sell')">Sell Data</button>
-  <button onclick="show('withdraw')">Withdraw</button>
-  <button onclick="show('history')">History</button>
-</div>
-
-<!-- SELL -->
-<div class="container screen" id="sell">
-  <h2>Sell Data</h2>
-
-  <select>
-    <option>MTN</option>
-    <option>Airtel</option>
-    <option>Glo</option>
-    <option>9mobile</option>
-  </select>
-
-  <input placeholder="Amount (GB)">
-  <button onclick="sellData()">Sell</button>
-</div>
-
-<!-- WITHDRAW -->
-<div class="container screen" id="withdraw">
-  <h2>Withdraw</h2>
-
-  <select>
-    <option>Bank Transfer</option>
-    <option>OPay</option>
-    <option>PalmPay</option>
-  </select>
-
-  <input placeholder="Account Number">
-  <input placeholder="Amount">
-
-  <button onclick="withdraw()">Withdraw</button>
-</div>
-
-<!-- HISTORY -->
-<div class="container screen" id="history">
-  <h2>Transaction History</h2>
-  <div class="card">No transactions yet</div>
-</div>
-
-<!-- PROFILE -->
-<div class="container screen" id="profile">
-  <h2>Profile</h2>
-  <button onclick="logout()">Logout</button>
-</div>
-
-<!-- NAV -->
-<div class="nav">
-  <span onclick="show('dashboard')">Home</span>
-  <span onclick="show('sell')">Sell</span>
-  <span onclick="show('history')">History</span>
-  <span onclick="show('profile')">Profile</span>
-</div>
-
-<!-- WHATSAPP -->
-<a href="https://wa.me/2348169822782?text=Hello%20I%20need%20help" target="_blank" class="whatsapp-btn">
-  WhatsApp
-</a>
+<button onclick="buyData()">Buy</button>
 
 <script>
-function show(id){
-  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
+let currentUser = null;
+
+async function login() {
+  const res = await fetch('http://localhost:3000/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      phone: phone.value,
+      password: password.value
+    })
+  });
+  const data = await res.json();
+  currentUser = data.user;
+  alert('Logged in');
 }
 
-function sendOTP(){
-  alert("OTP sent (demo)");
+async function loadPlans() {
+  const net = network.value;
+  const res = await fetch(`http://localhost:3000/plans/${net}`);
+  const plansData = await res.json();
+
+  plans.innerHTML = '';
+  plansData.forEach(p => {
+    const opt = document.createElement('option');
+    opt.text = `${p.plan} - ₦${p.price}`;
+    opt.value = p.plan;
+    plans.appendChild(opt);
+  });
 }
 
-function verifyOTP(){
-  alert("OTP verified");
+async function buyData() {
+  const res = await fetch('http://localhost:3000/buy-data', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      phone: currentUser.phone,
+      network: network.value,
+      plan: plans.value
+    })
+  });
+  const data = await res.json();
+  alert(data.message || data.error);
 }
-
-function completeRegister(){
-  alert("Account created!");
-  show('login');
-}
-
-function login(){
-  show('dashboard');
-}
-
-function sellData(){
-  alert("Data sold! ₦315 added");
-}
-
-function withdraw(){
-  alert("Withdrawal successful");
-}
-
-function logout(){
-  show('welcome');
-}
-</script>
-
-</body>
+</script></body>
 </html>
+*/
