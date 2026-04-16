@@ -1,137 +1,218 @@
 const express = require("express");
+const http = require("http");
+const socketIo = require("socket.io");
+const multer = require("multer");
+const path = require("path");
+
 const app = express();
+const server = http.createServer(app);
+const io = socketIo(server);
 
 app.use(express.json());
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 let users = [];
+let messages = [];
 let currentId = 1;
 
-// Serve frontend
+// Storage for images
+const storage = multer.diskStorage({
+  destination: "./uploads",
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + ".jpg");
+  }
+});
+const upload = multer({ storage });
+
+// FRONTEND (ALL PAGES INSIDE ONE)
 app.get("/", (req, res) => {
-    res.send(`
-    <html>
-    <head>
-        <title>Dating App</title>
-    </head>
-    <body>
-        <h1>Simple Dating App ❤️</h1>
+  res.send(`
+<!DOCTYPE html>
+<html>
+<head>
+<title>Dating App</title>
+<style>
+body { font-family: Arial; text-align: center; }
+img { width: 120px; border-radius: 10px; }
+.card { border: 1px solid #ccc; padding: 10px; margin: 10px; }
+</style>
+</head>
+<body>
 
-        <h2>Register</h2>
-        <input id="name" placeholder="Name"><br>
-        <input id="age" placeholder="Age"><br>
-        <input id="bio" placeholder="Bio"><br>
-        <button onclick="register()">Register</button>
+<h1>Dating App ❤️</h1>
 
-        <h2>Login</h2>
-        <input id="loginName" placeholder="Name"><br>
-        <button onclick="login()">Login</button>
+<div id="auth">
+<h2>Register</h2>
+<form id="form">
+<input name="name" placeholder="Name"><br>
+<input name="age" placeholder="Age"><br>
+<input name="bio" placeholder="Bio"><br>
+<input type="file" name="image"><br>
+<button>Register</button>
+</form>
 
-        <h2>Users</h2>
-        <div id="users"></div>
+<h2>Login</h2>
+<input id="loginName" placeholder="Name">
+<button onclick="login()">Login</button>
+</div>
 
+<div id="app" style="display:none">
+<h2>Users</h2>
+<div id="users"></div>
+
+<h2>Chat</h2>
+<div id="messages"></div>
+<input id="msg">
+<button onclick="send()">Send</button>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
 <script>
 let currentUser = null;
+const socket = io();
 
-function register() {
-    fetch("/register", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({
-            name: document.getElementById("name").value,
-            age: document.getElementById("age").value,
-            bio: document.getElementById("bio").value
-        })
-    }).then(res => res.json()).then(data => {
-        alert("Registered!");
-        loadUsers();
-    });
-}
+// Register
+document.getElementById("form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const formData = new FormData(e.target);
 
+  await fetch("/register", { method: "POST", body: formData });
+  alert("Registered!");
+});
+
+// Login
 function login() {
-    fetch("/login", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({
-            name: document.getElementById("loginName").value
-        })
-    }).then(res => res.json()).then(user => {
-        if(user.error) return alert("User not found");
-        currentUser = user;
-        alert("Logged in as " + user.name);
-    });
+  fetch("/login", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({
+      name: document.getElementById("loginName").value
+    })
+  })
+  .then(res => res.json())
+  .then(user => {
+    if(user.error) return alert("User not found");
+
+    currentUser = user;
+    document.getElementById("auth").style.display = "none";
+    document.getElementById("app").style.display = "block";
+
+    loadUsers();
+  });
 }
 
+// Load users
 function loadUsers() {
-    fetch("/users")
-    .then(res => res.json())
-    .then(data => {
-        const container = document.getElementById("users");
-        container.innerHTML = "";
+  fetch("/users")
+  .then(res => res.json())
+  .then(data => {
+    const container = document.getElementById("users");
+    container.innerHTML = "";
 
-        data.forEach(u => {
-            const div = document.createElement("div");
-            div.innerHTML = \`
-                <h3>\${u.name} (\${u.age})</h3>
-                <p>\${u.bio}</p>
-                <button onclick="like(\${u.id})">Like</button>
-                <hr>
-            \`;
-            container.appendChild(div);
-        });
+    data.forEach(u => {
+      const div = document.createElement("div");
+      div.className = "card";
+      div.innerHTML = \`
+        <h3>\${u.name} (\${u.age})</h3>
+        <img src="/uploads/\${u.image || ""}">
+        <p>\${u.bio}</p>
+        <button onclick="like(\${u.id})">❤️ Like</button>
+      \`;
+      container.appendChild(div);
     });
+  });
 }
 
+// Like
 function like(id) {
-    if(!currentUser) return alert("Login first");
-
-    fetch("/like", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({
-            userId: currentUser.id,
-            likedUserId: id
-        })
-    }).then(() => alert("Liked ❤️"));
+  fetch("/like", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({
+      userId: currentUser.id,
+      likedUserId: id
+    })
+  }).then(() => alert("Liked ❤️"));
 }
 
-loadUsers();
+// Chat
+function send() {
+  const text = document.getElementById("msg").value;
+
+  socket.emit("sendMessage", {
+    sender: currentUser.name,
+    text
+  });
+}
+
+socket.on("receiveMessage", msg => {
+  const div = document.createElement("div");
+  div.innerText = msg.sender + ": " + msg.text;
+  document.getElementById("messages").appendChild(div);
+});
 </script>
-    </body>
-    </html>
-    `);
+
+</body>
+</html>
+  `);
 });
 
 // Register
-app.post("/register", (req, res) => {
-    const user = {
-        id: currentId++,
-        name: req.body.name,
-        age: req.body.age,
-        bio: req.body.bio,
-        likes: []
-    };
+app.post("/register", upload.single("image"), (req, res) => {
+  const user = {
+    id: currentId++,
+    name: req.body.name,
+    age: req.body.age,
+    bio: req.body.bio,
+    image: req.file ? req.file.filename : "",
+    likes: [],
+    matches: []
+  };
 
-    users.push(user);
-    res.send(user);
+  users.push(user);
+  res.send(user);
 });
 
 // Login
 app.post("/login", (req, res) => {
-    const user = users.find(u => u.name === req.body.name);
-    if (!user) return res.send({ error: "User not found" });
-    res.send(user);
+  const user = users.find(u => u.name === req.body.name);
+  res.send(user || { error: "User not found" });
 });
 
-// Get users
+// Users
 app.get("/users", (req, res) => {
-    res.send(users);
+  res.send(users);
 });
 
-// Like system
+// Like + Match
 app.post("/like", (req, res) => {
-    const user = users.find(u => u.id === req.body.userId);
-    user.likes.push(req.body.likedUserId);
-    res.send({ message: "Liked!" });
+  const { userId, likedUserId } = req.body;
+
+  const user = users.find(u => u.id == userId);
+  const liked = users.find(u => u.id == likedUserId);
+
+  if (!user.likes.includes(likedUserId)) {
+    user.likes.push(likedUserId);
+  }
+
+  if (liked.likes.includes(userId)) {
+    if (!user.matches.includes(likedUserId)) {
+      user.matches.push(likedUserId);
+      liked.matches.push(userId);
+    }
+  }
+
+  res.send({ success: true });
 });
 
-app.listen(3000, () => console.log("Server running on http://localhost:3000"));
+// Chat (Socket)
+io.on("connection", (socket) => {
+  socket.on("sendMessage", (data) => {
+    messages.push(data);
+    io.emit("receiveMessage", data);
+  });
+});
+
+server.listen(3000, () => {
+  console.log("Running on http://localhost:3000");
+});
